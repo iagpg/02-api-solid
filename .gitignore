@@ -1,5 +1,5 @@
-tutorial
+tutorial.txt
 node_modules
 build
 .env
-biome
+biome.json
