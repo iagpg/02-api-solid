@@ -1,0 +1,126 @@
+$ pacotes em modo desenvolvedor
+
+>npm i typescript -D
+>npm i tsx -D
+>npm i @types/node -D
+>npm i tsup -D
+>npm i eslint -D
+>npm i eslint -D
+>npm i primsa -D
+>npm i bcryptjs -D
+
+[tsx] - é uma extensão do typescript util para executar codigos em typescript. tsx suporta ESModules para modularização A execução é feita é transpilado em js para node reconhecer além disso nenhuma configuração inicial é necessária.
+tsx nao cria arquivos em javascript. isso é feito em segundo plano
+
+[@types/node] - pacote fundamental para o ecosistema do typescript.Especialmente em ambintes que utilizam node.js. types/node é um pacote que contem definições para a API do Node, fornecendo as declarações que ajudam o typescript a entender as estruturas e tipos no ambiente node. ##permite que você use a API do Node.js com a segurança de tipos do TypeScript
+
+[tsup] - pacote utilizado ja transpilação de arquivos com extenções como .json, .ts, .tsx para js, empacotando os arquivos do diretório. 
+
+[eslint] - eslint permite que no modo de desenvolvimento, seja sugerido diversos aprimoramentos para o código, alem de formatar o código seguindo algumas regras para que toda a aplicação esteja padrozinada.
+rodando o comando:
+    > npx eslint --init permite uma configuração passo a passo para que o eslint seja instalado de maneira apropriada a o seu projeto, outras pacotes serão instalados como: globals, @eslint/js, typescript-eslint.
+
+[Primsa] - ORM para Node.js que facilita a integração com o banco de dados. Permite escrever consultas em js ou ts de forma intuitiva, gerando slq para diferentes tipos de banco de dados
+
+    1. Tipagem automática: Ao usar Prisma, o código gera automaticamente tipos TypeScript baseados no seu esquema de banco de dados, garantindo mais segurança e redução de erros.
+    2.Gerenciamento de esquema: Ele possui uma ferramenta de migração chamada Prisma Migrate, que permite gerenciar alterações no esquema do banco de dados de maneira controlada.
+    4.Cliente Prisma: Gera um cliente personalizado com métodos para consultar, criar, atualizar e deletar registros, o que facilita a escrita de queries SQL complexas de maneira declarativa e tipada.
+    5.Prisma Studio: Uma interface gráfica para visualizar e gerenciar dados diretamente no banco.
+
+
+$ pacotes modo global
+
+>npx tsc --init
+>npm i fastify
+>npm i dotenv
+>npm i zod
+
+[fastify] - fastify é uma web framework leve, rápido e altamente extensível. Ideal para construção de APIs
+
+-----------------------------------------------------------------------------------------------------------------------------
+
+[atualização das versões dos pacotes automaticamente de forma segura]
+
+utilizando o Renovate do git para atualizar as versões dos pacotes. Renovate roda os codigos unitários para verificar se os pacotes podem ser atualizados de tal forma que o app nao tenha problemas. Caso os testes sejam feitos e passados, é gerado um PR para solicitar a atualização
+
+.npmrc arquivo com configurações do gerenciador de pacotes
+    - save-exact=true
+    $ faz com que as versões dos pacotes sejam fixas.
+
+
+ORM - object relational mapper.
+
+alguns ORM
+1.Sequencial
+2.TypeORM
+3.Prisma -> tem uma integração com o typescript(faz a inferência automaticamente com o comando npx prisma generate)
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------
+prisma config
+
+apos a instalação do npm i prisma -D usamos o comando para criar umm projeto prisma
+>npx prisma init
+
+apos a criação de um model, usamos o comando npm prisma generate para criar a tipagem da tabela recem criadas, @type
+é possivel verificar esse arquivo em node_modules/prisma/client/index.d.ts
+
+>npx prisma generate
+
+agora para fazer a comunicação e configuração com o banco de dados instalaremos um pacote com o comando npm i @prisma/client
+>npm i @prisma/client
+
+verifica se houve alguma alteração no schema.prisma e faz a atualização do banco de dados que ainda nao foi refletido no banco de dados, mantém tudo que foi feito atualizado.
+>npx prisma migrate dev
+
+para visualiar as tabelas, o prisma tem uma interface para gerenciar tudo isso.
+>npx prisma studio
+-----------------------------------------------------------------------------------------------------------------------------
+[docker]
+
+docker é um software que oferece ambientes virtualizados que empacotam tudo em um SO. isso é chamado de imagem. um container é a instancia de uma imagem que roda isoladamente.
+os containers são isolados e podem ser portados para outros computadores
+o que compoe um container? armazena todo o ecosistema da infraestrutura. tao como as bibliotecas,banco de dados, os interpretadores de linguagem de programacao e etc.Todo o ambiente e suas configurações sao armazenados em um container.
+
+o docker virtualia esse ecosisema e perpetua para todas as maquinas que estão nesse ambiente de desenvolvimento, indepentende do sistema operacional ou as versões das dependencias, todos serão capazes de desenvolver utilizando o mesmo ambiente de desenvolvimento
+
+para criar um ambiente para postegre, podemos usar uma imagem previamente preparada pela bitnami/postgresql
+
+>docker run --name api-solid-pg -e POSTGRESQL_USERNAME=docker -e POSTGRESQL_PASSWORD=docker -e POSTGRESQL_DATABASE=api-solid -p 5432:5432  bitnami/postgresql
+
+
+[postico] - para conectar e acessar banco postgres
+
+
+e tambem já configuramos algumas variaveis de ambiente para conectar nosso banco eventualmente, user:docker e password:docker
+comandos:
+
+>docker ps                                        lista todos os containers ativos
+>docker ps -a                                     lista todos os containers criados
+>docker rename <nome-do-banco ou id> <novo-nome>  renomear um container pelo id
+>docker start <nome-do-banco ou id>               ligar container
+>docker stop <nome-do-banco ou id> ou ctrl+C      parar container
+>docker rm <nome-do-banco ou id>                  para deletar o container
+>docker logs <nome-do-banco ou id>                para vvisualizar os logs
+>docker logs -f                                   mostra os logs sempre
+
+
+docker compose up -d        cria/inicia containers de acordo com o arquvio de configurração docker-compose.yml
+docker compose down         deleta os containers
+docker compose stop         para de rodar os containers
+
+
+
+[bcryptjs] - dependencia para proteção de dados
+
+utilizando [repository pattern]
+
+os repositories são funções que fazem a comunicação com o banco de dados, sempre que for necessário realizar uma modificação no banco, usamos os repositories
+vantagem: separar a logistica e a comunicação e um tipo de arquivo separado, as manutenção serão feitas nos repos
+
+
+
+[solid] - SOLID representa os cinco princípios que facilitam o processo de desenvolvimento — o que facilita a manutenção e a expansão do software.
+
+5 - [D] depenecy inversion principle
