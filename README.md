@@ -5,9 +5,9 @@
 
 ##RFs (requisitos funcionias)
 
-- [ ] Its possible to create an account;
+- [x] Its possible to create an account;
 - [ ] its possible to authenticate;
-- [ ] Its possible get information about the authenticated user;
+- [x] Its possible get information about the authenticated user;
 - [ ] Its possible to get number of check-in while user is logged in;
 - [ ] Its possible to get users's check-in history;
 - [ ] Its possible to find gyms near the users;
@@ -18,7 +18,7 @@
 
 ##RNs (regras de negócio)
 
-- [ ] Users cannot signin up with an duplicated email;
+- [x ] Users cannot signin up with an duplicated email;
 - [ ] Users cannot make more than one check-in on the same day;
 - [ ] Users cannot check in unless they are within 100 meters of the gym;
 - [ ] The check-in only can be validated within 20 minutes of being created;
@@ -28,8 +28,8 @@
 
 ##RNFs (requisitos não funcionais)
 
-- [ ] Password must be securely encrypted;
-- [ ] The user's data must be persisted in a postgreSQL database;
+- [x] Password must be securely encrypted;
+- [x] The user's data must be persisted in a postgreSQL database;
 - [ ] All elements of a list must be displayed 20 per page;
 - [ ] Users must be identified by a JWT (json Webtoken);
 
