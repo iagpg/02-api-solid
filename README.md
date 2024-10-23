@@ -18,7 +18,7 @@
 
 ##RNs (regras de negócio)
 
-- [x ] Users cannot signin up with an duplicated email;
+- [x] Users cannot signin up with an duplicated email;
 - [ ] Users cannot make more than one check-in on the same day;
 - [ ] Users cannot check in unless they are within 100 meters of the gym;
 - [ ] The check-in only can be validated within 20 minutes of being created;
