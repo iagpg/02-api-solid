@@ -1,3 +1,4 @@
+import { ZodError, ZodIssue } from "zod"
 
 export class EmailAlreadyRegistered extends Error {
     constructor() {
@@ -13,10 +14,21 @@ export class UnkownError extends Error{
     }
 }
 
-
 export class UserNotFound extends Error{
     
     constructor() {
         super('User not found')
+    }
+}
+export class UserAlreadyDesactived extends Error{
+    
+    constructor() {
+        super('User already Desactived')
+    }
+}
+
+export class ZodErrorValidataion extends ZodError{
+    constructor(issues: ZodIssue[] = []) {
+        super(issues)
     }
 }

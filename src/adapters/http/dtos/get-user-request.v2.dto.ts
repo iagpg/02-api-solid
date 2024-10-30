@@ -5,7 +5,7 @@ const schemaUserDTO = z.object({
     email: z.string().email()
 })
 
-export class GetUserDTOv2{
+export class UserDTO{
 
     public name:string
     public email:string
@@ -18,6 +18,7 @@ export class GetUserDTOv2{
     }
 
     protected validate(data:z.infer<typeof schemaUserDTO>){
+        
         schemaUserDTO.parse(data)
     }
 }

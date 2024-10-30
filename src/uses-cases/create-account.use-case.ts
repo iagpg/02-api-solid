@@ -1,25 +1,24 @@
-import type { User, UserRepository } from '@/domain/user'
+import {PartialUserUpdate, UserDomain, type UserRepository } from '@/domain/user'
 
 export class UserCrudUsecase{
-
-    private repository:UserRepository
-
-    constructor(repository:UserRepository){
-        this.repository = repository
+    constructor(
+        private readonly repository:UserRepository){
     }
-    async createAccount(user:User){
-        return this.repository.create(user)
+    async createAccount(user:UserDomain){
+        await this.repository.create(user)
     }   
     
     async getUser(id:string){
-        return this.repository.get(id)
+        return await this.repository.get(id)
     }  
 
-    async getActiveUser(id:string){
-        return this.repository.getActiveUser(id)
+    async updateUser(partialUser:PartialUserUpdate){
+        const user = await this.getUser(partialUser.id)
+        const userDomain = user.userMerge(partialUser)
+        await this.repository.update(partialUser.id,userDomain)
     }
-    async updateUser(id:string, dataToUpdate:object){
-        return this.repository.update(id, dataToUpdate)
+
+    async deleteUser(id:string){
+        this.repository.delete(id)
     }
-    
 }

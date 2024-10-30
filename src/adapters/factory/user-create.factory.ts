@@ -8,7 +8,6 @@ export class UserControllerFactory{
         const repo = new PrismaUsersRepository()
         const userCase = new UserCrudUsecase(repo)
         const userController = new UserController(userCase)
-
         return userController
     }
 }
