@@ -25,6 +25,8 @@ export class UpdateUserDTO{
     }
 
     protected validate(data:z.infer<typeof schemaUserDTO>){
-        schemaUserDTO.parse(data)
+        const t =  schemaUserDTO.parse(data)
+       
+        return t
     }
 }

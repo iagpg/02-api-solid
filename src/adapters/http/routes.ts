@@ -4,17 +4,20 @@ import { EmailAlreadyRegistered, UnkownError, UserNotFound, ZodErrorValidataion 
 import { UserControllerFactory } from "../factory/user-create.factory"
 
 const userController = UserControllerFactory.getInstance()
+
 const createUser = userController.createUser.bind(userController)
 const getUser = userController.getUser.bind(userController)
 const updateUser = userController.updateUser.bind(userController)
 const deleteUser = userController.deleteUser.bind(userController)
+const getAllUsers = userController.getAllUsers.bind(userController)
 
 export async function appRoutes(app: FastifyInstance) {
     
     app.post('/users',createUser)
-    app.get('/users:id',getUser)
-    app.patch('/users:id',updateUser)
-    app.delete('/users:id',deleteUser)
+    app.get('/users/:id',getUser)
+    app.patch('/users/:id',updateUser)
+    app.delete('/users/:id',deleteUser)
+    app.get('/users/all',getAllUsers)
 
     app.setErrorHandler((error,_request,reply) =>{
         
@@ -27,7 +30,7 @@ export async function appRoutes(app: FastifyInstance) {
         else if (error instanceof ZodErrorValidataion) {
             return reply.status(400).send({message:"validation error",issue: error.format()})
         }
-        console.error(error)
+        console.error('error informattion',error)
         return reply.status(500).send(new UnkownError())
     })
 }

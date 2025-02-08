@@ -28,7 +28,8 @@ export class CreateUserDTO{
             user.name,
             user.email,
             user.password,
-            user.active
+            user.active,
+        
         )
     }
 
