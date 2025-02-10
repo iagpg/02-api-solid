@@ -46,8 +46,8 @@ export class UserCrudUsecase{
         await this.repository.delete(id)
     }
 
-    async getAllUsers(active:boolean,cursor:string,take:number){
-        const allUsers = await this.repository.getAll(active,cursor,take)
+    async getAllUsers(active:boolean,take:number,cursor?:string){
+        const allUsers = await this.repository.getAll(active,take,cursor)
 
         return allUsers
     }

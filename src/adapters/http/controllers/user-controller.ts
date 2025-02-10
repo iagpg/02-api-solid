@@ -1,6 +1,5 @@
 import { UserCrudUsecase } from "@/uses-cases/create-account.use-case"
-import type { FastifyReply, FastifyRequest } from "fastify"
-import type { ServerResponse } from "node:http"
+import { type FastifyReply, type FastifyRequest } from "fastify"
 import { UserDTO } from "../dtos/get-user-request.v2.dto"
 import { CreateUserDTO } from "../dtos/create-user-request.dto"
 import { UpdateUserDTO } from "../dtos/update-user-request.dto"
@@ -14,14 +13,9 @@ export class UserController {
         this.userUseCase = userUseCase
     }
     
-    public async createUser(request:FastifyRequest,reply:FastifyReply<ServerResponse>){
+    public async createUser(request:FastifyRequest<{Body:CreateUserDTO}>,reply:FastifyReply){
 
         const userCreateDTO = new CreateUserDTO(request.body)
-        // const userData = new UserDomain(
-        //     userCreateDTO.name,
-        //     userCreateDTO.email,
-        //     userCreateDTO.password,
-        //     true)
         const userData = userCreateDTO.toDomain(userCreateDTO)
          
         await this.userUseCase.createAccount(userData)
@@ -29,8 +23,8 @@ export class UserController {
         return reply.status(201).send()
     }
 
-    public async getUser(request:FastifyRequest,reply:FastifyReply<ServerResponse>){
-
+    public async getUser(request:FastifyRequest<{Querystring: {id:string}}>,reply:FastifyReply){
+ 
         const {id} = request.query
         //full domain data
         const userOutputInfo = await this.userUseCase.getUser(id)
@@ -44,16 +38,14 @@ export class UserController {
         return reply.status(200).send(userInfo)
     }
 
-    public async getAllUsers(request:FastifyRequest,reply:FastifyReply<ServerResponse>){
+    public async getAllUsers(request:FastifyRequest<{Querystring:PaginationDTO}>,reply:FastifyReply){
 
-        const {active,skip,take,cursor} = request.query
+        const {active,take,cursor} = request.query
   
         const params = new PaginationDTO({
-            active:active === 'true', // to bolean
-            skip:skip,
-            take:take
+            active,take,cursor // to bolean
         })
-        const usersPagination = await this.userUseCase.getAllUsers(params.active, cursor, params.take)
+        const usersPagination = await this.userUseCase.getAllUsers(params.active, params.take, params.cursor)
 
         const users = new GetAllUsersDTO(usersPagination.users).getUsers
         console.log(usersPagination)
@@ -65,8 +57,7 @@ export class UserController {
             users
         })
     }
-
-    public async updateUser(request:FastifyRequest,reply:FastifyReply<ServerResponse>){
+    public async updateUser(request:FastifyRequest<{Querystring: {id:string},Body:UpdateUserDTO}>,reply:FastifyReply){
         const {id} = request.query
         const dataToUpdate = request.body
         const userDTO = new UpdateUserDTO({
@@ -79,7 +70,7 @@ export class UserController {
         return reply.status(204).send()
     }
 
-    public async deleteUser(request:FastifyRequest,reply:FastifyReply<ServerResponse>){
+    public async deleteUser(request:FastifyRequest<{Querystring: {id:string}}>,reply:FastifyReply){
         const {id} = request.query
         await this.userUseCase.deleteUser(id)
 

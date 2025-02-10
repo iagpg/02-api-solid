@@ -2,11 +2,11 @@
 export class UserDomain{
 
     constructor(
-        public name:string,
+        public name: string,
         public email: string,
         public password: string,
-        public active:boolean,
-        public created_at:Date
+        public active: boolean,
+        public created_at: Date
     ){
 
     }
@@ -21,6 +21,12 @@ export class UserDomain{
 
 export class authenticateRequest{
     constructor(public email:string, public password:string){
+
+    }
+}
+
+export class authenticateResponse {
+    constructor(public id:string){
 
     }
 }
@@ -44,5 +50,5 @@ export interface UserRepository{
     getByEmail: (email:string)=>Promise<UserDomain | undefined>
     delete: (id:string)=>Promise<void>
 
-    getAll: (active:boolean , cursor:string, take:number)=>Promise<UserAggregator>
+    getAll: (active:boolean , take:number,cursor?:string)=>Promise<UserAggregator>
 }

@@ -76,7 +76,7 @@ export class PrismaUsersRepository implements UserRepository {
         return undefined
     }
 
-    async getAll(active: boolean, cursor: string | undefined, take: number) {
+    async getAll(active: boolean, take: number, cursor: string | undefined) {
         const total = await prisma.user.count({
             where: { active },
         })

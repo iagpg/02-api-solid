@@ -1,24 +1,24 @@
 import { FastifyReply, FastifyRequest } from 'fastify'
 import {authenticateCase} from '../../../uses-cases/authenticate.use-case'
-import { ServerResponse } from 'node:http'
 import { invalidCredentialsError } from '@/core/exeptions/errors'
+import { authenticateRequest } from '@/domain/user'
 
-export class authenticateController {
+export class AuthenticateController {
     private authenticateUseCase: authenticateCase
 
     constructor(authenticateUseCase: authenticateCase) {
         this.authenticateUseCase = authenticateUseCase
     }
 
-    public async authenticate(request:FastifyRequest,reply:FastifyReply<ServerResponse>){
+    public async authenticate(request:FastifyRequest<{Querystring: authenticateRequest}>,reply:FastifyReply){
         try{
         
             const {email,password} = request.query
-
-            const user = this.authenticateUseCase.authenticate({email,password})
+            const user = await this.authenticateUseCase.authenticate({email,password})
             return reply.status(200).send(user)
         
         } catch(error){
+          
             if (error instanceof invalidCredentialsError) {
                 return reply.status(401).send()
             }

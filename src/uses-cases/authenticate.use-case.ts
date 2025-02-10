@@ -12,15 +12,16 @@ export class authenticateCase {
         email,
         password
     }:authenticateRequest): Promise<UserDTO>{
+    
         const userFound = await this.usersRepository.getByEmail(email)
 
-        if(!userFound){
+        if(!userFound) {
             throw new invalidCredentialsError()
         }
         
         const doesPasswordMatches = await compare(password, userFound.password)
-
-        if(!doesPasswordMatches){
+        
+        if(!doesPasswordMatches) {
             throw new invalidCredentialsError()
         }
 
