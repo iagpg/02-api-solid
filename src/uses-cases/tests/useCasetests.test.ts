@@ -1,24 +1,31 @@
 import {describe, it,expect, vi} from 'vitest'
-import { PartialUserUpdate, UserDomain } from '@/domain/user'
+import { AuthenticateResponse, CheckIn, CheckInResponse, PartialUserUpdate, UserDomain } from '@/domain/user'
 import { UserCrudUsecase } from '../create-account.use-case'
-import { EmailAlreadyRegistered } from '@/core/exeptions/errors'
+import { authenticateCase } from '../authenticate.use-case'
+import { hash } from 'bcrypt'
+import { randomUUID } from 'node:crypto'
+import { CheckInUseCase } from '../check-in.use-case'
+import { beforeEach } from 'node:test'
+import { CheckInAlreadyExist, CheckInTwiceSameDay, EmailAlreadyRegistered, invalidCredentialsError } from '@/core/exeptions/errors'
 
+const inMemoryRepo = {
+    create: vi.fn(),
+    update: vi.fn(),
+    getById: vi.fn(),
+    getByEmail: vi.fn(),
+    delete: vi.fn(),
+    getAll: vi.fn(),
+    get: vi.fn(),
+}
+const authenticateUseCase = new authenticateCase(inMemoryRepo)
+const userCase = new UserCrudUsecase(inMemoryRepo)
+const checkInUseCase = new CheckInUseCase(inMemoryRepo)
 describe('Register Use Case', ()=>{
     
-    const inMemoryRepo = {
-        create: vi.fn(),
-        update: vi.fn(),
-        getById: vi.fn(),
-        getByEmail: vi.fn(),
-        delete: vi.fn(),
-        getAll: vi.fn(),
-    }
-
-    const userCase = new UserCrudUsecase(inMemoryRepo)
-
     it('should update an user with all parameters', async()=>{
         const current_date = new Date()
         const user = new UserDomain(
+            'id',
             'iago',
             'iago222122@gmail.com',
             '12345',
@@ -44,6 +51,7 @@ describe('Register Use Case', ()=>{
 
         const current_date = new Date()
         const user = new UserDomain(
+            'id',
             'iago',
             'iago222122@gmail.com',
             '12345',
@@ -57,6 +65,7 @@ describe('Register Use Case', ()=>{
         await userCase.updateUser(userUpdated)
 
         const expected = new UserDomain(
+            'id',
             'johnDoe',
             'iago222122@gmail.com',
             '12345',
@@ -71,6 +80,7 @@ describe('Register Use Case', ()=>{
 
         const current_date = new Date()
         const existingUser = new UserDomain(
+            'id',
             'iago',
             'iago123@gmail.com',
             '12345',
@@ -80,6 +90,7 @@ describe('Register Use Case', ()=>{
         inMemoryRepo.getByEmail.mockResolvedValue(existingUser)
 
         const newUser = new UserDomain(
+            'id',
             'johnDoe',
             'iago123@gmail.com',
             '22334',
@@ -94,6 +105,7 @@ describe('Register Use Case', ()=>{
         
         const current_date = new Date()
         const newAccount = new UserDomain(
+            'iasdasd',
             'iago',
             'iago123@gmail.com',
             '12345',
@@ -111,6 +123,7 @@ describe('Register Use Case', ()=>{
 
         const current_date = new Date()
         const expectedUser = new UserDomain(
+            'asdasdasd',
             'iago',
             'iago123@gmail.com',
             '12345',
@@ -126,6 +139,7 @@ describe('Register Use Case', ()=>{
 
         const current_date = new Date()
         const expectedUser = new UserDomain(
+            'asdasd',
             'iago',
             'iago123@gmail.com',
             '12345',
@@ -136,7 +150,139 @@ describe('Register Use Case', ()=>{
         await expect(userCase.getUser(userEmail)).resolves.toBeInstanceOf(UserDomain)
     })
 
-    it('should delete an account',async ()=>{
+})
 
+describe('authentication Use Case', () => {
+
+    it('should give an error of authorization', async ()=>{
+        const email = 'iago@gmail.com'
+        const incorretPassword = '123456789'
+        const correctPassword = '123456'
+        const current_date = new Date()
+
+        const hashedPassword = await hash(correctPassword,6)
+        const userFound = new UserDomain(
+            'id',
+            'name',
+            'iago@gmail.com',
+            hashedPassword,
+            false,
+            current_date)
+            
+        inMemoryRepo.getByEmail.mockResolvedValue(userFound)
+        await expect(authenticateUseCase.authenticate({email, password:incorretPassword})).rejects.toThrow(invalidCredentialsError)
+    })
+
+    it('should authenticate successfully', async ()=>{
+        const email = 'iago@gmail.com'
+        const correctPassword = '123456'
+        const current_date = new Date()
+
+        const hashedPassword = await hash(correctPassword,6)
+        const userFound = new UserDomain(
+            'id',
+            'name',
+            'iago@gmail.com',
+            hashedPassword,
+            false,
+            current_date)
+
+        inMemoryRepo.getByEmail.mockResolvedValue(userFound)
+        const response = await authenticateUseCase.authenticate({ email, password: correctPassword })
+
+        expect(response).toBeInstanceOf(AuthenticateResponse)
+        expect(response).toMatchObject({ id: 'id' } as AuthenticateResponse)
+    })
+})
+
+describe('Check in Use Case', ()=>{
+
+    beforeEach(()=>{ vi.useFakeTimers()})
+    it('should create check in', async ()=>{
+        const user_id = randomUUID()
+        const gym_id = randomUUID()
+
+        const createdCheckIn = new CheckIn(
+            randomUUID(),
+            new Date(),
+            user_id,
+            gym_id
+        )
+        inMemoryRepo.get.mockResolvedValue(undefined)
+        inMemoryRepo.create.mockResolvedValue(createdCheckIn)
+       
+        await expect(checkInUseCase.CreateCheckIn({userId:user_id,gymId:gym_id})).resolves.toBeInstanceOf(CheckInResponse)
+        
+    })
+
+    it('should check if a check in exist', async ()=>{
+        const user_id = randomUUID()
+        const gym_id = randomUUID()
+
+        const existentCheckIn = new CheckIn(
+            randomUUID(),
+            new Date(),
+            user_id,
+            gym_id
+        )
+
+        inMemoryRepo.get.mockResolvedValue(existentCheckIn)
+        inMemoryRepo.create.mockResolvedValue(CheckInAlreadyExist)
+        
+        await expect(checkInUseCase.CreateCheckIn({
+            userId:user_id,
+            gymId:gym_id
+        }
+        )).rejects.toBeInstanceOf(CheckInAlreadyExist)
+        
+    })
+
+    it("Should validate user's check in", async ()=>{
+        const user_id = randomUUID()
+        const gym_id = randomUUID() 
+
+        const date = new Date(2025, 2, 22, 8, 0, 0)
+        vi.setSystemTime(date)
+        
+        const userCheckIn = new CheckIn(
+            randomUUID(),
+            new Date(),
+            user_id,
+            gym_id,
+            new Date(2025,2,23,16,0,0)
+        )
+        console.log(userCheckIn.created_at)
+
+        inMemoryRepo.get.mockResolvedValue(userCheckIn)
+        const spy = vi.spyOn(inMemoryRepo, "update")
+
+        const result = await checkInUseCase.validateCheckIn(userCheckIn.user_id, date)
+        expect(result).toBeUndefined() // void
+        expect(spy).toHaveBeenCalledWith(userCheckIn.user_id, date)
+        vi.useRealTimers()
+
+    })
+
+    it("Should not validated user's check in twice", async ()=>{
+        const user_id = randomUUID()
+        const gym_id = randomUUID() 
+
+        const date = new Date(2025, 2, 14, 8, 0, 0)
+        
+        const userCheckIn = new CheckIn(
+            randomUUID(),
+            new Date(),
+            user_id,
+            gym_id,
+            date
+        )
+        
+        vi.setSystemTime(date)
+        
+        inMemoryRepo.get.mockResolvedValue(userCheckIn)
+        const spy = vi.spyOn(inMemoryRepo,'update')
+        await expect(checkInUseCase.validateCheckIn(userCheckIn.id ,date)).rejects.toThrow(CheckInTwiceSameDay)
+        expect(spy).not.toHaveBeenCalledWith(userCheckIn.user_id, date)
+        vi.useRealTimers()
     })
 })
