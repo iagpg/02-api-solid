@@ -1,14 +1,14 @@
 import {describe, it,expect, vi} from 'vitest'
-import { AuthenticateResponse, CheckIn, CheckInResponse, PartialUserUpdate, UserDomain } from '@/domain/user'
+import { AuthenticateResponse, CheckIn, CheckInResponse, Gym, PartialUserUpdate, UserDomain } from '@/domain/user'
 import { UserCrudUsecase } from '../create-account.use-case'
 import { authenticateCase } from '../authenticate.use-case'
 import { hash } from 'bcrypt'
 import { randomUUID } from 'node:crypto'
 import { CheckInUseCase } from '../check-in.use-case'
 import { beforeEach } from 'node:test'
-import { CheckInAlreadyExist, CheckInTwiceSameDay, EmailAlreadyRegistered, invalidCredentialsError } from '@/core/exeptions/errors'
+import { CheckInAlreadyExist, CheckInTwiceSameDay, EmailAlreadyRegistered, invalidCredentialsError, ResourceNotFound, UserNotInRange } from '@/core/exeptions/errors'
 
-const inMemoryRepo = {
+const mockuserRepo = {
     create: vi.fn(),
     update: vi.fn(),
     getById: vi.fn(),
@@ -16,10 +16,18 @@ const inMemoryRepo = {
     delete: vi.fn(),
     getAll: vi.fn(),
     get: vi.fn(),
+    getByDate:vi.fn()
 }
-const authenticateUseCase = new authenticateCase(inMemoryRepo)
-const userCase = new UserCrudUsecase(inMemoryRepo)
-const checkInUseCase = new CheckInUseCase(inMemoryRepo)
+
+const mockGymRepository = {
+    create: vi.fn(),
+    get: vi.fn(),
+}
+const authenticateUseCase = new authenticateCase(mockuserRepo)
+const userCase = new UserCrudUsecase(mockuserRepo)
+//const gymCase = new GymUseCase(mockGymRepository)
+
+const checkInUseCase = new CheckInUseCase(mockuserRepo,mockGymRepository)
 describe('Register Use Case', ()=>{
     
     it('should update an user with all parameters', async()=>{
@@ -32,12 +40,12 @@ describe('Register Use Case', ()=>{
             true,
             current_date)
 
-        inMemoryRepo.getById.mockResolvedValue(user)
+        mockuserRepo.getById.mockResolvedValue(user)
         const expectedId = "1"
         const partialUser = new PartialUserUpdate(expectedId, "yolo", false)
         await userCase.updateUser(partialUser)
 
-        expect(inMemoryRepo.update).toHaveBeenCalledWith(expectedId, expect.objectContaining({
+        expect(mockuserRepo.update).toHaveBeenCalledWith(expectedId, expect.objectContaining({
             name: "yolo",
             email: "iago222122@gmail.com",
             password: "12345",
@@ -58,7 +66,7 @@ describe('Register Use Case', ()=>{
             false,
             current_date)
 
-        inMemoryRepo.getById.mockResolvedValue(user)
+        mockuserRepo.getById.mockResolvedValue(user)
 
         const expectedId = "1"
         const userUpdated = new PartialUserUpdate(expectedId, "johnDoe")
@@ -72,7 +80,7 @@ describe('Register Use Case', ()=>{
             false,
             current_date)
 
-        expect(inMemoryRepo.update).toHaveBeenCalledWith(expectedId, expected)
+        expect(mockuserRepo.update).toHaveBeenCalledWith(expectedId, expected)
 
     })
 
@@ -87,7 +95,7 @@ describe('Register Use Case', ()=>{
             false,
             current_date)
 
-        inMemoryRepo.getByEmail.mockResolvedValue(existingUser)
+        mockuserRepo.getByEmail.mockResolvedValue(existingUser)
 
         const newUser = new UserDomain(
             'id',
@@ -98,7 +106,7 @@ describe('Register Use Case', ()=>{
             current_date)
        
         await expect(userCase.createAccount(newUser)).rejects.toThrow(EmailAlreadyRegistered)
-        expect(inMemoryRepo.create).not.toHaveBeenCalled()
+        expect(mockuserRepo.create).not.toHaveBeenCalled()
     })
 
     it("should create an account",async ()=>{
@@ -112,8 +120,8 @@ describe('Register Use Case', ()=>{
             false,
             current_date)
             
-        inMemoryRepo.getByEmail.mockResolvedValue(undefined) // usuário nao existe
-        inMemoryRepo.create.mockResolvedValue(newAccount)
+        mockuserRepo.getByEmail.mockResolvedValue(undefined) // usuário nao existe
+        mockuserRepo.create.mockResolvedValue(newAccount)
 
         await expect(userCase.createAccount(newAccount)).resolves.toBeInstanceOf(UserDomain)
     })
@@ -130,7 +138,7 @@ describe('Register Use Case', ()=>{
             false,
             current_date)
 
-        inMemoryRepo.getById.mockResolvedValue(expectedUser)
+        mockuserRepo.getById.mockResolvedValue(expectedUser)
         await expect(userCase.getUser(userId)).resolves.toBeInstanceOf(UserDomain)
     })
 
@@ -146,7 +154,7 @@ describe('Register Use Case', ()=>{
             false,
             current_date)
 
-        inMemoryRepo.getByEmail.mockResolvedValue(expectedUser)
+        mockuserRepo.getByEmail.mockResolvedValue(expectedUser)
         await expect(userCase.getUser(userEmail)).resolves.toBeInstanceOf(UserDomain)
     })
 
@@ -169,7 +177,7 @@ describe('authentication Use Case', () => {
             false,
             current_date)
             
-        inMemoryRepo.getByEmail.mockResolvedValue(userFound)
+        mockuserRepo.getByEmail.mockResolvedValue(userFound)
         await expect(authenticateUseCase.authenticate({email, password:incorretPassword})).rejects.toThrow(invalidCredentialsError)
     })
 
@@ -187,7 +195,7 @@ describe('authentication Use Case', () => {
             false,
             current_date)
 
-        inMemoryRepo.getByEmail.mockResolvedValue(userFound)
+        mockuserRepo.getByEmail.mockResolvedValue(userFound)
         const response = await authenticateUseCase.authenticate({ email, password: correctPassword })
 
         expect(response).toBeInstanceOf(AuthenticateResponse)
@@ -197,44 +205,52 @@ describe('authentication Use Case', () => {
 
 describe('Check in Use Case', ()=>{
 
-    beforeEach(()=>{ vi.useFakeTimers()})
+    const gym = new Gym({
+        id: randomUUID(),
+        title: 'test gym',
+        description:'',
+        phone:'',
+        latitude:-23.960269,
+        longitude:-46.3732736,
+    })
+
+    beforeEach(()=>{
+        vi.useFakeTimers()
+    })
     it('should create check in', async ()=>{
         const user_id = randomUUID()
         const gym_id = randomUUID()
-
+        const date =  new Date()
         const createdCheckIn = new CheckIn(
             randomUUID(),
-            new Date(),
+            date,
             user_id,
             gym_id
         )
-        inMemoryRepo.get.mockResolvedValue(undefined)
-        inMemoryRepo.create.mockResolvedValue(createdCheckIn)
+
+        vi.spyOn(checkInUseCase, 'validateCheckInCreation').mockResolvedValue(undefined)
+
+        mockuserRepo.get.mockResolvedValue(undefined)
+        mockuserRepo.create.mockResolvedValue(createdCheckIn)
        
-        await expect(checkInUseCase.CreateCheckIn({userId:user_id,gymId:gym_id})).resolves.toBeInstanceOf(CheckInResponse)
+        await expect(checkInUseCase.CreateCheckIn({userId:user_id,gymId:gym_id,date})).resolves.toBeInstanceOf(CheckInResponse)
         
     })
 
-    it('should check if a check in exist', async ()=>{
+    it('should not create an existent check in', async ()=>{
         const user_id = randomUUID()
-        const gym_id = randomUUID()
+        const date = new Date(2025, 2, 22, 8, 0, 0)
+        vi.setSystemTime(date)
 
-        const existentCheckIn = new CheckIn(
-            randomUUID(),
-            new Date(),
-            user_id,
-            gym_id
-        )
+        vi.spyOn(checkInUseCase,'validateCheckInCreation').mockRejectedValue(new CheckInAlreadyExist())
 
-        inMemoryRepo.get.mockResolvedValue(existentCheckIn)
-        inMemoryRepo.create.mockResolvedValue(CheckInAlreadyExist)
-        
         await expect(checkInUseCase.CreateCheckIn({
             userId:user_id,
-            gymId:gym_id
+            gymId:gym.id,
+            date
         }
         )).rejects.toBeInstanceOf(CheckInAlreadyExist)
-        
+        vi.useRealTimers()
     })
 
     it("Should validate user's check in", async ()=>{
@@ -253,10 +269,14 @@ describe('Check in Use Case', ()=>{
         )
         console.log(userCheckIn.created_at)
 
-        inMemoryRepo.get.mockResolvedValue(userCheckIn)
-        const spy = vi.spyOn(inMemoryRepo, "update")
+        mockuserRepo.getByDate.mockResolvedValue(userCheckIn)
+        mockGymRepository.get.mockResolvedValue(gym)
 
-        const result = await checkInUseCase.validateCheckIn(userCheckIn.user_id, date)
+        const spy = vi.spyOn(mockuserRepo, "update")
+
+        const result = await checkInUseCase.validateCheckIn(userCheckIn.user_id, date,{
+            latitude: -23.960269, longitude:-46.3732736
+        })
         expect(result).toBeUndefined() // void
         expect(spy).toHaveBeenCalledWith(userCheckIn.user_id, date)
         vi.useRealTimers()
@@ -279,10 +299,73 @@ describe('Check in Use Case', ()=>{
         
         vi.setSystemTime(date)
         
-        inMemoryRepo.get.mockResolvedValue(userCheckIn)
-        const spy = vi.spyOn(inMemoryRepo,'update')
-        await expect(checkInUseCase.validateCheckIn(userCheckIn.id ,date)).rejects.toThrow(CheckInTwiceSameDay)
+        mockuserRepo.getByDate.mockResolvedValue(userCheckIn)
+        mockGymRepository.get.mockResolvedValue(gym)
+
+        const spy = vi.spyOn(mockuserRepo,'update')
+        await expect(checkInUseCase.validateCheckIn(userCheckIn.id ,date,{
+            latitude: -23.960269, longitude:-46.3732736
+        })).rejects.toThrow(CheckInTwiceSameDay)
         expect(spy).not.toHaveBeenCalledWith(userCheckIn.user_id, date)
         vi.useRealTimers()
+    })
+
+    it('should verify if a user is inside of 100m of a gym ', async ()=>{
+
+        const user_id = randomUUID()
+        const date = new Date(2025, 2, 14, 8, 0, 0)
+
+        const userCheckIn = new CheckIn(
+            randomUUID(),
+            new Date(),
+            user_id,
+            gym.id,
+            undefined
+        )
+
+        mockuserRepo.getByDate.mockResolvedValue(userCheckIn)
+
+        mockGymRepository.get.mockResolvedValue(gym)
+
+        const spy = vi.spyOn(mockuserRepo,'update')
+        const result = await checkInUseCase.validateCheckIn(user_id,date,
+            {
+                latitude: -23.960369, longitude:-46.3732836
+            })
+        expect(result).toBeUndefined()
+        expect(spy).toHaveBeenCalledWith(userCheckIn.user_id, date)
+    })
+
+    it('should verify if a user is outside of 100m of a gym ', async ()=>{
+
+        const user_id = randomUUID()
+        const date = new Date(2025, 2, 14, 8, 0, 0)
+
+        const userCheckIn = new CheckIn(
+            randomUUID(),
+            new Date(),
+            user_id,
+            gym.id,
+            undefined // undefined otherwise will give "check in" twice error
+        )
+
+        mockuserRepo.getByDate.mockResolvedValue(userCheckIn)
+        mockGymRepository.get.mockResolvedValue(gym)
+  
+        //  const spy = vi.spyOn(mockuserRepo,'update')'
+        await expect(checkInUseCase.validateCheckIn(user_id, date, {
+            latitude: -23.9578767, longitude: -46.3431117
+        })).rejects.toThrow(UserNotInRange)
+    })
+    it('it should error when trying to get a non existent check-in', async ()=>{
+        const user_id = randomUUID()
+        const date = new Date(2025, 2, 14, 8, 0, 0)
+
+        mockuserRepo.getByDate.mockRejectedValue(new ResourceNotFound())
+        mockGymRepository.get.mockResolvedValue(gym)
+        
+        await expect(checkInUseCase.validateCheckIn(user_id, date, {
+            latitude: -23.9578767, longitude: -46.3431117
+        })).rejects.toThrow(ResourceNotFound)
     })
 })
